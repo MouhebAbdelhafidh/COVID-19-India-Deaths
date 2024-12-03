@@ -1,7 +1,10 @@
 ##############################   Importing Libraries   ##############################
 
 library(readr)
-
+library(ggplot2)
+library(reshape2)
+# install.packages("ggplot2")
+# install.packages("reshape2")
 ##############################   Loading datasets   ##############################
 
 dataset1 <- read_csv("covid_19_india.csv")
@@ -39,8 +42,12 @@ data_overview <- function(data) {
 data_overview(dataset1)
 data_overview(dataset2)
 ##############################   Data Exploration   ##############################
+# Deleting ID column
+dataset1 <- subset(dataset1, select = -Sno)
+dataset2 <- subset(dataset2, select = -`S. No.`)
 ##############################   Univariate analysis (Data distribution)   ##############################
 
+# Histograms
 plot_histograms <- function(data) {
   # Identify numeric columns
   numeric_columns <- sapply(data, is.numeric)
@@ -66,6 +73,28 @@ plot_histograms <- function(data) {
 
 plot_histograms(dataset1)
 plot_histograms(dataset2)
+
+# Boxplots
+
+create_boxplots <- function(dataset, title = "Boxplots of Numeric Features") {
+  # Extract numeric columns
+  numeric_data <- dataset[, sapply(dataset, is.numeric)]
+  
+  # Reshape the data for ggplot2
+  melted_data <- reshape2::melt(numeric_data, variable.name = "Feature", value.name = "Value")
+  
+  # Create the boxplots
+  boxplots <- ggplot(melted_data, aes(x = Feature, y = Value)) +
+    geom_boxplot(outlier.color = "red", outlier.shape = 16, outlier.size = 2) +
+    theme_minimal() +
+    labs(title = title, x = "Features", y = "Values") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  return(boxplots)
+}
+
+create_boxplots(dataset1)
+create_boxplots(dataset2)
 
 ##############################   Bivariate Analysis   ##############################
 
@@ -124,5 +153,27 @@ bivariate_analysis <- function(data) {
   par(mfrow = c(1, 1))
 }
 
-bivariate_analysis(dataset1)
+bivariate_analysis(dataset1)	
 bivariate_analysis(dataset2)
+
+##############################   Multivariate Analysis   ##############################
+
+create_correlation_heatmap <- function(dataset, title = "Correlation Matrix Heatmap") {
+  # Step 1: Compute the correlation matrix for numeric columns
+  cor_matrix <- cor(dataset[, sapply(dataset, is.numeric)], use = "complete.obs")
+  
+  # Step 2: Reshape the correlation matrix using melt()
+  melted_cor_matrix <- melt(cor_matrix)
+  
+  # Step 3: Create and return a heatmap
+  heatmap <- ggplot(melted_cor_matrix, aes(x = Var1, y = Var2, fill = value)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+    theme_minimal() +
+    labs(title = title, x = "", y = "") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  return(heatmap)
+}
+create_correlation_heatmap(dataset1)
+create_correlation_heatmap(dataset2)
